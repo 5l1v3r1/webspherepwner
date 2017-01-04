@@ -5,15 +5,6 @@ import os
 import requests
 import time
 
-#-------------------------[Credits]----------------------------#
-'''
-
-Dan the man - Developer and founder of project 
-Chen the cr0w - Researcher
-
-'''
-#--------------------------------------------------------------#
-
 # colors class
 
 
