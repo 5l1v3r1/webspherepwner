@@ -8,6 +8,7 @@ from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
 
 # colors class
+#this class configures the colors for the script
 
 
 class bgcolors:
@@ -18,8 +19,7 @@ class bgcolors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
 
-# function of banner
-
+# banner function
 
 def banner():
     banner = '''
@@ -35,7 +35,9 @@ def banner():
 
 banner()
 
+######################################################################
 #-----------------------------[settings]-----------------------------#
+######################################################################
 
 # path of the servers
 addresses = open("/home/el4zar/Desktop/servers", "r").read().split()
@@ -48,6 +50,7 @@ ws_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
 # tomcat wordlist
 
 tc_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
+
 
 # websphere wordlist
 jb_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
@@ -77,11 +80,15 @@ queue4 = Queue.Queue()
 
 
 # application console paths
-paths = ['/console', '/manager/html', '/console/App.html'']
+paths = ['/console', '/manager/html', '/management']
 
 print "[*] - Searching for servers with webshere, tomcat and jboss"
 
 # websphere brute force class
+
+######################################################################
+#--------------------------End of Settings---------------------------#
+######################################################################
 
 
 class BruteForce_ws(threading.Thread):
@@ -124,12 +131,11 @@ class BruteForce_tc(threading.Thread):
         		if r.status_code == 200:
         			print "\r{}[* Tomcat *] - Default password on ip: {} : {}:{}{}".strip("\n").format(bgcolors.OKGREEN, url, first_word, second_word, bgcolors.ENDC)
 
+
 # jboss brute force class # note this is only suitable for jboss 7x and
 # above at the moment
 
-
 class BruteForce_jb(threading.Thread):
-	# requests.get(url, auth=HTTPDigestAuth('user', 'pass'))
     def __init__(self):
         threading.Thread.__init__(self)
 
@@ -144,7 +150,6 @@ class BruteForce_jb(threading.Thread):
 
 
 # Search class
-
 
 class WorkerThread(threading.Thread):
 
@@ -168,11 +173,17 @@ class WorkerThread(threading.Thread):
 					if r.status_code == 401 and '/manager/html' in r.url:
 						print "\r{}[!] - Found server with tomcat admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
 						queue3.put(full)
-					if r.status_code == 401 and '/:
+					if r.status_code == 401 and '/management':
 						print "\r{}[!] - Found server with jboss admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
 						queue4.put(full)
                 except:
                     continue
+
+
+
+###################################################################################
+#--------------------------------threads------------------------------------------#
+###################################################################################
 
 threads = []
 
